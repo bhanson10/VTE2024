@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <lapacke.h>
 #include <cblas.h>
+#include <stdbool.h>
 #include <string.h>
 
 #define DIM 3
@@ -102,11 +103,11 @@ typedef struct Cell {
     int del_f;
 } Cell;
 
-Cell Cell_create(double prob, double* v, double* u, double* w, double* ctu, double dcu, int new_f, int ik_f, int del_f) {
+Cell Cell_create(double prob, double* v, double* u, double* w, double* ctu, int* state, double dcu, int new_f, int ik_f, int del_f) {
     Cell c;
     c.prob = prob;
     for(int i = 0; i < DIM; i++){
-        c.v[i] = v[i]; c.u[i] = u[i]; c.w[i] = w[i]; c.ctu[i] = ctu[i];
+        c.v[i] = v[i]; c.u[i] = u[i]; c.w[i] = w[i]; c.ctu[i] = ctu[i]; c.state[i] = state[i]; 
     }
     c.dcu = dcu; 
     c.new_f = new_f; 
@@ -120,7 +121,7 @@ typedef struct Grid {
     double thresh;
     double dt;
     double center[DIM];
-    double del[DIM];
+    double dx[DIM];
 } Grid;
 
 typedef struct Traj {
@@ -174,7 +175,8 @@ typedef struct BST{
 
 BST BST_create() {
     BST P;
-    P.a_count = 0;
+    P.dead = NULL;
+    P.root = NULL; 
     P.a_count = 0;
     P.tot_count = 1;
     P.max_key = -1;
@@ -199,15 +201,15 @@ TreeNode* BST_insert_recursive(TreeNode* r, TreeNode* new_node){
     return r;
 }
 
-// TreeNode* BST_search_recursive(TreeNode* r, uint64_t k){ 
-//     if ((r == NULL)||(r->key == k)){
-//         return r;
-//     }else if (k < r->key){
-//         return search_recursive(r->left, k);
-//     }else{
-//         return search_recursive(r->right,k);
-//     }
-// }
+TreeNode* BST_search_recursive(TreeNode* r, uint64_t k){ 
+    if ((r == NULL)||(r->key == k)){
+        return r;
+    }else if (k < r->key){
+        return BST_search_recursive(r->left, k);
+    }else{
+        return BST_search_recursive(r->right,k);
+    }
+}
 
 // TreeNode* min_value_node(TreeNode* node){ 
 //     TreeNode* current = node;
@@ -325,36 +327,69 @@ TreeNode* BST_insert_recursive(TreeNode* r, TreeNode* new_node){
 //     }
 // }
 
-void BST_initialize_grid(Grid G, Traj T, Measurement M, BST* P){
+void BST_initialize_ik_nodes(TreeNode* r, BST* P){
+    if(r == NULL){
+        return;
+    }
+    BST_initialize_ik_nodes(r->left, P); 
+    BST_initialize_ik_nodes(r->right, P);
+
+    if(r->cell.ik_f == 0){
+        int l_state[DIM]; 
+        memcpy(l_state, r->cell.state, DIM * sizeof(int)); 
+        for(int q = 0; q < DIM; q++){
+            // Initializing i, k nodes
+            int i_state[DIM]; memcpy(i_state, l_state, DIM * sizeof(int)); i_state[q] = i_state[q] - 1; uint64_t i_key = state_conversion(i_state); 
+            int k_state[DIM]; memcpy(k_state, l_state, DIM * sizeof(int)); k_state[q] = k_state[q] + 1; uint64_t k_key = state_conversion(k_state); 
+            TreeNode* i_node = BST_search_recursive(P->root, i_key); TreeNode* k_node = BST_search_recursive(P->root, k_key); 
+
+            if(i_node == NULL){
+                i_node = P->dead; r->cell.i_nodes[q] = i_node; 
+            }else{
+                r->cell.i_nodes[q] = i_node; i_node->cell.k_nodes[q] = r; 
+            }
+
+            if(k_node == NULL){
+                k_node = P->dead; r->cell.k_nodes[q] = k_node; 
+            }else{
+                r->cell.k_nodes[q] = k_node; k_node->cell.i_nodes[q] = r; 
+            }
+        }
+        r->cell.ik_f = 1; 
+    } 
+}
+
+void BST_initialize_grid(Grid* G, Measurement M, BST* P){
     double zeros[DIM] = {0.0};
-    TreeNode* dead_node = TreeNode_create(-1, Cell_create(0, zeros, zeros, zeros, zeros, 0, -1, -1, -1)); 
+    int max[DIM] = {INT_MAX, INT_MAX, INT_MAX};
+    TreeNode* dead_node = TreeNode_create(-1, Cell_create(0, zeros, zeros, zeros, zeros, max, 0, -1, -1, -1)); 
     
     for(int i = 0; i < DIM; i++){
         dead_node->cell.i_nodes[i] = dead_node; dead_node->cell.k_nodes[i] = dead_node; 
     }
     P->dead = dead_node; 
 
-    int current_state[DIM]; double current_state_vec[DIM]; uint64_t key; TreeNode* new_node; 
-    for (int i = (int) round(-3*M.cov[0][0])/G.del[0]; i <= (int) round(3*M.cov[0][0])/G.del[0]; i++){current_state[0] = i; current_state_vec[0] = i*G.del[0]; 
-        for (int j = (int) round(-3*M.cov[1][1])/G.del[1]; j <= (int) round(3*M.cov[1][1])/G.del[1]; j++){current_state[1] = j; current_state_vec[1] = j*G.del[1];
-            for (int k = (int) round(-3*M.cov[2][2])/G.del[2]; k <= (int) round(3*M.cov[2][2])/G.del[2]; k++){current_state[2] = k; current_state_vec[2] = k*G.del[2];
+    int current_state[DIM]; double current_state_vec[DIM]; uint64_t key; double x; TreeNode* new_node; 
+    for (int i = (int) round(-3*M.cov[0][0])/G->dx[0]; i <= (int) round(3*M.cov[0][0])/G->dx[0]; i++){current_state[0] = i; current_state_vec[0] = i*G->dx[0]; 
+        for (int j = (int) round(-3*M.cov[1][1])/G->dx[1]; j <= (int) round(3*M.cov[1][1])/G->dx[1]; j++){current_state[1] = j; current_state_vec[1] = j*G->dx[1];
+            for (int k = (int) round(-3*M.cov[2][2])/G->dx[2]; k <= (int) round(3*M.cov[2][2])/G->dx[2]; k++){current_state[2] = k; current_state_vec[2] = k*G->dx[2];
                 key = state_conversion(current_state);
-                double x = gauss_probability(current_state_vec, (double *)M.cov);
-                new_node = TreeNode_create(key, Cell_create(x, zeros, zeros, zeros, zeros, 0, 0, 0, 0)); 
+                x = gauss_probability(current_state_vec, (double *)M.cov);
+                new_node = TreeNode_create(key, Cell_create(x, zeros, zeros, zeros, zeros, current_state, 0, 0, 0, 0));
                 P->root = BST_insert_recursive(P->root, new_node);
             }
         }
     }
+
+    BST_initialize_ik_nodes(P->root, P);
 }
 
 /*==============================================================================
 Python Wrapper Functions
 ==============================================================================*/
-
-// BST initialize_gbees(char FILE_PATH[], const int NM){
-void initialize_gbees(const char* FILE_PATH){
-
-    printf("Reading in discrete measurements...\n\n");
+BST initialize_gbees(const char* FILE_PATH, Grid* G){
+    //================================ Read in initial discrete measurement info ===============================//
+    printf("Reading in initial discrete measurement...\n\n");
 
     Measurement M = Measurement_create();
 
@@ -364,7 +399,6 @@ void initialize_gbees(const char* FILE_PATH){
     char *token;
     int count = 0;
 
-    // Construct the full file path
     snprintf(filepath, sizeof(filepath), "%s%s", FILE_PATH, "/measurements0.txt");
 
     FILE *measurement_file = fopen(filepath, "r");
@@ -372,55 +406,45 @@ void initialize_gbees(const char* FILE_PATH){
     fgets(line, sizeof(line), measurement_file); // skip label line
     fgets(line, sizeof(line), measurement_file);
     token = strtok(line, " ");
-        while (token != NULL && count < DIM) {
-            // Convert token to double
-            M.mean[count++] = strtod(token, NULL);
-            token = strtok(NULL, " ");
-        }
-
-    // Close the file
-    fclose(measurement_file);
-
-    printf("%f, %f, %f\n", M.mean[0], M.mean[1], M.mean[2]);
-    /*
-    printf("Reading in discrete measurements...\n\n");
-
-    Measurement M = Measurement_create();
-
-    char filepath[256];
-    char line[256];
-    FILE *file;
-    char *token;
-    double values[100]; 
-    int count = 0;
-
-    snprintf(filepath, sizeof(filepath), "%s%s", FILE_PATH, "/measurements0.txt");
-    FILE* measurement_file = fopen(filepath, "r");
-    
-    fgets(line, sizeof(line), measurement_file);
-
-    if (fgets(line, sizeof(line), file) != NULL) {
-        token = strtok(line, " ");
-        while (token != NULL && count < 100) {
-            values[count++] = strtod(token, NULL);
-            token = strtok(NULL, " ");
-        }
-
-        // Print the parsed doubles
-        printf("Parsed doubles from %s:\n", filepath);
-        for (int i = 0; i < count; i++) {
-            printf("%f\n", values[i]);
-        }
+    while (token != NULL && count < DIM) {
+        M.mean[count++] = strtod(token, NULL);
+        token = strtok(NULL, " ");
     }
+    count = 0; 
+
+    fgets(line, sizeof(line), measurement_file); // skip blank line
+    fgets(line, sizeof(line), measurement_file); // skip label line
+    for(int i = 0; i < DIM; i++){
+        fgets(line, sizeof(line), measurement_file); 
+        token = strtok(line, " ");
+        while (token != NULL && count < DIM) {
+            M.cov[i][count++] = strtod(token, NULL);
+            token = strtok(NULL, " ");
+        }
+        count = 0; 
+    }
+    fgets(line, sizeof(line), measurement_file); // skip blank line
+    fgets(line, sizeof(line), measurement_file); // skip label line
+    fgets(line, sizeof(line), measurement_file); 
+    M.T = strtod(line, NULL); 
 
     fclose(measurement_file);
-    */
-}
+    //==========================================================================================================//
 
-int main(){
+    //========================================== Read in user inputs ===========================================//
+    printf("Reading in user inputs...\n\n");
+ 
+    memcpy(G->center, M.mean, DIM * sizeof(double)); 
+    for(int i = 0; i < DIM; i++){
+        G->center[i] = M.mean[i]; 
+        G->dx[i] = pow(M.cov[i][i],0.5)/2.0; 
+    }
+    //==========================================================================================================//
+    BST P = BST_create(); 
 
-    char* FILE_PATH = "./Data";
-    initialize_gbees(FILE_PATH);
+    printf("Initializing distribution...\n\n");
 
-    return 0;
+    BST_initialize_grid(G, M, &P); 
+
+    return P;
 }
