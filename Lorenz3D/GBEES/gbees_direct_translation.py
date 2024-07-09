@@ -2,14 +2,32 @@ import numpy as np
 import ctypes as ct
 import sys
 import time
+import cProfile
+import pstats
 
 DIM = 3  # Dimensionality
 
-gbees = ct.CDLL("gbees.so")
-gbees.state_conversion.restype = ct.c_int64
+def rosenberg_pair(state, d, m):
+    if d==1:
+        return state[0]
+    
+    new_state = np.empty(d-1)
+    for i in range(d-1):
+        new_state[i] = state[i]
+
+    new_m = np.max(new_state)
+    return rosenberg_pair(new_state, d-1, new_m) + m**d + (m - state[d-1])*((m + 1)**(d - 1) - m**(d - 1))
 
 def state_conversion(state):
-    return gbees.state_conversion((ct.c_int * DIM)(*state), ct.c_int(DIM))
+    shift_state = np.empty(DIM)
+    for i in range(DIM):
+        if(state[i] < 0):
+            shift_state[i] = -2*state[i] - 1
+        else:
+            shift_state[i] = 2*state[i]
+
+    m = np.max(shift_state)
+    return int(rosenberg_pair(shift_state, DIM, m))
 
 def mc(th):
     return max(0, min((1 + th)/2, 2.0, 2*th))
@@ -121,34 +139,73 @@ class BST:
         b_factor = l_height - r_height
         return b_factor
 
-    def _store_nodes(self, root, nodes):
-        if not root:
-            return
+    # def _store_nodes(self, root, nodes):
+    #     if not root:
+    #         return
         
-        self._store_nodes(root.left, nodes)
-        nodes.append(root)
-        self._store_nodes(root.right, nodes)
+    #     self._store_nodes(root.left, nodes)
+    #     nodes.append(root)
+    #     self._store_nodes(root.right, nodes)
 
-    def _balance_recursive(self, nodes, start, end):
-        if start > end:
-            return None
+    # def _balance_recursive(self, nodes, start, end):
+    #     if start > end:
+    #         return None
         
-        mid = (start + end)//2
-        node = nodes[mid]
+    #     mid = (start + end)//2
+    #     node = nodes[mid]
 
-        node.left = self._balance_recursive(nodes, start, mid - 1)
-        node.right = self._balance_recursive(nodes, mid + 1, end)
-        return node
+    #     node.left = self._balance_recursive(nodes, start, mid - 1)
+    #     node.right = self._balance_recursive(nodes, mid + 1, end)
+    #     return node
+    
+    # def balance(self, root):
+    #     bal_factor = self._get_difference(root)
+    #     if abs(bal_factor) > 1:
+    #         nodes = []
+    #         self._store_nodes(root, nodes)
+    #         n = len(nodes)
+    #         return self._balance_recursive(nodes, 0, n - 1)
+    #     else:
+    #         return root
+    
+    def _rr_rotate(self, root):
+        t = root.right
+        root.right = t.left
+        t.left = root
+        return t
+    
+    def _ll_rotate(self, root):
+        t = root.left
+        root.left = t.right
+        t.right = root
+        return t
+    
+    def _lr_rotate(self, root):
+        t = root.left
+        root.left = self._rr_rotate(t)
+        return self._ll_rotate(root)
+    
+    def _rl_rotate(self, root):
+        t = root.right
+        root.right = self._ll_rotate(t)
+        return self._rr_rotate(root)
     
     def balance(self, root):
         bal_factor = self._get_difference(root)
-        if abs(bal_factor) > 1:
-            nodes = []
-            self._store_nodes(root, nodes)
-            n = len(nodes)
-            return self._balance_recursive(nodes, 0, n - 1)
-        else:
-            return root
+        while(abs(bal_factor) >  1):
+            if bal_factor > 1:
+                if self._get_difference(root.left) > 0:
+                    root = self._ll_rotate(root)
+                else:
+                    root = self._lr_rotate(root)
+            elif bal_factor < -1:
+                if self._get_difference(root.right) > 0:
+                    root = self._rl_rotate(root)
+                else:
+                    root = self._rr_rotate(root)
+            bal_factor = self._get_difference(root)
+
+        return root
 
     def search(self, key):
         return self._search_recursive(self.root, key)
@@ -610,7 +667,9 @@ class Measurement:
         self.T    = None
 
 if __name__ == "__main__":
-    #===================================== Read in measurement/trajectory info =================================#
+    profiler = cProfile.Profile()
+    profiler.enable()
+     #===================================== Read in measurement/trajectory info =================================#
     print("Reading in discrete measurements...\n")
 
     NM        = 1         # Number of measurements 
@@ -732,3 +791,7 @@ if __name__ == "__main__":
             measurement_file.readline(); # Skip label line
             m.T = float(measurement_file.readline())
             measurement_file.close()
+
+    profiler.disable()
+    results = pstats.Stats(profiler)
+    results.dump_stats("./Data/results_direct_translation.prof")
