@@ -21,6 +21,7 @@ plot3(Y(:,1),Y(:,2),Y(:,3),'k-','linewidth',2,'DisplayName','Nominal'); drawnow;
 figure(2);
 plot3(Y(:,1),Y(:,2),Y(:,3),'k-','linewidth',2,'DisplayName','Nominal'); drawnow;
 
+%{
 % Plotting MC trajectories
 for k=0:nm
     DATA_PATH = append("./MC/Trajectories/M", num2str(k));
@@ -60,7 +61,6 @@ options = odeset('RelTol', 1e-13); % Setting a tolerance
 
 plot3(Y(:,1),Y(:,2),Y(:,3),'k-','linewidth',2,'HandleVisibility','off'); drawnow;
 
-%{
 % Plotting MC dots
 for k=0:nm
     DATA_PATH = append("./MC/Epochs/M", num2str(k));

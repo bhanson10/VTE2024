@@ -1,12 +1,12 @@
 clear all; close all; clc; 
 
 DATASET = "./Data"; TU = 1;
-name1 = 'Python';
+name1 = 'Python wrapper';
 name2 = 'C++';
 time_unit = '(TU)';
 
-f1 = fopen(DATASET + "/runtime1.txt", 'r');
-f2 = fopen(DATASET + "/runtime2.txt", 'r');
+f1 = fopen(DATASET + "/runtime_wrapper.txt", 'r');
+f2 = fopen(DATASET + "/runtime_c.txt", 'r');
 
 
 pf = 1; % Choose which speed test to perform, 1 or 2
@@ -45,7 +45,7 @@ if(pf==1)
     ylabel("Normalized program time", 'FontSize', 18, 'FontName', 'Times');
     
     yyaxis right; hold on; 
-    ylim([0.9,1.1])
+    ylim([0.5,1.5])
     s_norm = s1./s2;
     plot(rt1(2:end).*TU, s_norm(2:end), 'r-', 'LineWidth', 1, 'DisplayName', append(name1, ' / ', name2));
     ylabel("Normalized cell number", 'FontSize', 18, 'FontName', 'Times');
