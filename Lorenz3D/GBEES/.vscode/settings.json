@@ -1,9 +1,0 @@
-{
-    "code-runner.executorMap": {
-        "c": "gcc -I/opt/homebrew/opt/openblas/include -L/opt/homebrew/opt/openblas/lib -lopenblas -I/opt/homebrew/opt/lapack/include -L/opt/homebrew/opt/lapack/lib -llapacke $fileName -o $fileNameWithoutExt && ./$fileNameWithoutExt"
-    },
-    "files.associations": {
-        "stdlib.h": "c",
-        "complex": "c"
-    }
-}
