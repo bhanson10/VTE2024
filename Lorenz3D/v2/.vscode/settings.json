@@ -1,6 +1,6 @@
 {
     "code-runner.executorMap": {
-        "c": "gcc -I/opt/homebrew/opt/openblas/include -L/opt/homebrew/opt/openblas/lib -lopenblas -I/opt/homebrew/opt/lapack/include -L/opt/homebrew/opt/lapack/lib -llapacke -shared -o $fileNameWithoutExt.so $fileName",
+        "c": "gcc -I/usr/local/opt/openblas/include -L/usr/local/opt/openblas/lib -lopenblas -I/usr/local/opt/lapack/include -L/usr/local/opt/lapack/lib -llapacke -shared -o $fileNameWithoutExt.so $fileName",
         "python": "python3.12 -u"
     },
     "files.associations": {

@@ -5,9 +5,9 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers",
-                "/opt/homebrew/opt/lapack/**",
-                "/opt/homebrew/opt/openblas/**",
-                "/Library/Frameworks/Python.framework/Versions/3.11/include/python3.11/"
+                "/usr/local/opt/lapack/**",
+                "/usr/local/opt/openblas/**",
+                "/usr/local/opt/python@3.12/Frameworks/Python.framework/Versions/3.12/include/python3.12/"
             ],
             "defines": [],
             "macFrameworkPath": [
