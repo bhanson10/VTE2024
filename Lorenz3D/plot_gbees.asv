@@ -8,7 +8,7 @@ load("colors.mat");
 
 %% Initial Condition
 const.d = 3; const.T = 1; const.dx=0.5; const.sigma=4; const.b=1; const.r=48;
-rv.start=[-11.5; -10; 9.5]; rv.unc = [1; 1; 1];
+rv.start=[-11.5; -10; 9.5]; rv.unc = [1; 1; 1]; size = 200;
 
 %% Initializing Figures
 initialize_figures(); 
@@ -104,7 +104,7 @@ end
 
 %% GBEES
 NM = 1; 
-clear p; p.name = "GBEES"; p.alpha = [0.2, 0.4, 0.6]; 
+clear p; p.color = tolblue; p.name = "GBEES"; p.alpha = [0.2, 0.4, 0.6]; 
 dir_path = "./gbees/v0/Data/PDFs/P";
 
 count = 1;
@@ -117,7 +117,7 @@ for nm=0:NM-1
     for i=0:num_files-1
         file_path = sub_dir_path + "/pdf_" + num2str(i) + ".txt";
 
-        [x_gbees, P_gbees, n_gbees, t_gbees(count)] = parse_nongaussian_txt(file_path);
+        [x_gbees, P_gbees, n_gbees, t_gbees(count)] = parse_nongaussian_txt2(file_path);
     
         xest_gbees{count} = zeros(size(x_gbees(1,:)));
         for j=1:n_gbees
@@ -127,14 +127,25 @@ for nm=0:NM-1
         figure(1); 
         plot_nongaussian_surface(x_gbees,P_gbees,[normpdf(1)/normpdf(0), normpdf(2)/normpdf(0), normpdf(3)/normpdf(0)],p);
         figure(2); 
-        plot_nongaussian_surface(x_gbees,P_gbees,normpdf(3)/normpdf(0), p);
+        plot_nongaussian_surface(x_gbees,P_gbees,normpdf(3)/normpdf(0),p.alpha(1));
         drawnow; 
+
+        %{
+        file_path = dir_path + "/pdf_" + num2str(i) + ".txt"; 
+        fileID = fopen(file_path, 'r'); 
+        t = str2double(fgetl(fileID)); 
         
+
+        [D.P, D.j, D.n] = parseGBEES(file_path);
+        Plot_PDF(D,const,i,k);
+        fclose(fileID);
+        %}
+
         count = count + 1;
     end
 end
-%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                              FUNCTIONS                                  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                              FUNCTIONS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function f=Lorenz3D(y,const)                          
     f=[const.sigma*(y(2)-y(1));  -y(2)-y(1)*y(3);  -const.b*y(3)+y(1)*y(2)-const.b*const.r];
@@ -178,8 +189,65 @@ function initialize_figures()
     set(gca, 'FontName' , 'Times');
 
 end
+%{
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x, P, n, t] = parse_nongaussian_txt(filename)
+function Plot_PDF(D,const,flag1,flag2)        
+    max_val = zeros(1,const.d); min_val = zeros(1,const.d);
+    for i=1:const.d
+        max_val(i) = max(D.j(:,i))+const.dx; min_val(i) = min(D.j(:,i))-const.dx;
+    end
+    x_list = [min_val(1):const.dx:max_val(1)];
+    y_list = [min_val(2):const.dx:max_val(2)];
+    z_list = [min_val(3):const.dx:max_val(3)];
+    [X,Y,Z] = meshgrid(x_list, y_list, z_list);
+    Pfull=zeros(length(y_list),length(x_list),length(z_list));
+    
+    for l=1:D.n
+        x_val=D.j(l,1); y_val=D.j(l,2); z_val=D.j(l,3);
+        i=find(x_list==x_val); j=find(y_list==y_val); k=find(z_list==z_val); 
+        Pfull(j,i,k)=Pfull(j,i,k)+D.P(1,l);
+    end
+    
+    figure(1); 
+    isosurface(X,Y,Z,Pfull,0.005, "HandleVisibility","off");
+    isosurface(X,Y,Z,Pfull,0.0005, "HandleVisibility","off"); 
+    isosurface(X,Y,Z,Pfull,0.00005, "HandleVisibility","off"); alpha(.5);
+    colormap(cool);
+    %set(gcf, 'Color' , 'black' );
+    %set(gcf, 'NumberTitle', 'off', 'Name', 'Exploiting Sparsity'); 
+    %set(gcf, 'renderer', 'Painters') 
+    drawnow;
+    
+    figure(2); 
+    isosurface(X,Y,Z,Pfull,0.00005,"HandleVisibility","off"); alpha(.25);
+    colormap(cool);
+    %set(gcf, 'Color' , 'black' );
+    %set(gcf, 'NumberTitle', 'off', 'Name', 'Exploiting Sparsity'); 
+    %set(gcf, 'renderer', 'Painters') 
+    drawnow;
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [P, j, n] = parseGBEES(filename)
+    P = []; j = [];
+
+    fileID = fopen(filename, 'r'); line = fgetl(fileID); % Skip first line
+    
+    count = 1; 
+    while ~feof(fileID)
+        line = split(fgetl(fileID)); % Read a line as a string
+        P(count) = str2double(line{1});
+        j(count, :) = [str2double(line{2}) str2double(line{3}) str2double(line{4})];
+        count = count + 1; 
+    end
+    
+    % Close the file
+    fclose(fileID);
+    n = length(P); 
+end
+%}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function [x, P, n, t] = parse_nongaussian_txt2(filename)
+function [x, P, n, t] = parse_nongaussian_txt2(filename)
     fileID = fopen(filename, 'r'); t = str2double(fgetl(fileID));
     
     count = 1; 
@@ -189,6 +257,7 @@ function [x, P, n, t] = parse_nongaussian_txt(filename)
         x(count, :) = [str2double(line{2});str2double(line{3});str2double(line{4})];
         count = count + 1; 
     end
+    P = P./max(P); 
     
     % Close the file
     fclose(fileID);

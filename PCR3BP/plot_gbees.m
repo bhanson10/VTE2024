@@ -7,7 +7,6 @@ clear all; close all; clc;
 load("colors.mat"); 
 
 %% Initial Condition
-rng(2024);
 traj.sys = '/PCR3BP'; name = 'LPO_1';
 filename = append('./ICs', traj.sys,'/', name,'.csv');
 po = readmatrix(filename); const.mu = po(8);
@@ -58,6 +57,7 @@ plot(x((t <= 14*3600),3),x((t <= 14*3600),4), 'Color', tolred, 'LineStyle', '-',
 plot(x(:,3),x(:,4), 'Color', tolred, 'LineStyle', '--','LineWidth', 1, 'DisplayName','Nominal');
 drawnow;
 
+%{
 %% Particle Filter
 dir_path = "/Users/bhanson/OneDrive - UC San Diego/UCSD/Research/GBEES/GBEES/PCR3BP/PF/cmake-build-debug/Epochs/Europa/M0";
 file_list = dir(fullfile(dir_path, '*.txt'));  % List only .txt files
@@ -88,13 +88,14 @@ for i=[0, num_files-1]
 
     count = count + 1;
 end
+%}
 
 %% GBEES
 NM = 1; 
 clear p; p.color = tolblue; p.name = "GBEES"; p.alpha = [0.2, 0.4, 0.6]; 
 dir_path = "./gbees/v0/Data/PDFs/P";
 
-count = 1; axs_count = 1;
+count = 1;
 for nm=0:NM-1
 
     sub_dir_path = dir_path + num2str(nm); 
@@ -306,7 +307,6 @@ function [x, P, n, t] = parse_nongaussian_txt(filename)
         x(count, :) = [str2double(line{2});str2double(line{3});str2double(line{4});str2double(line{5})];
         count = count + 1; 
     end
-    P = P./max(P); 
     
     % Close the file
     fclose(fileID);

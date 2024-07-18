@@ -1,4 +1,4 @@
-# first_monte_script.py
+# phasing.py
 #
 # Benjamin Hanson, Summer 2024
 #
@@ -10,6 +10,7 @@ import mpy.traj.force.grav.basic as basicGrav
 from mpy.units import *
 import mpylab
 import matplotlib
+import sys
 
 # ==========================================================================
 # SETUP PROJECT DATA
@@ -82,11 +83,6 @@ integStateReference = M.IntegState(
 integ = M.IntegSetup( boa )
 integ.add( integStateReference )
 
-# Set up the propagator.
-prop = M.DivaPropagator( boa, "DIVA", integ )
-
-prop.create( boa, beginTime, endTime )
-
 # ==========================================================================
 # SET UP PHASING ORBIT
 # ==========================================================================
@@ -133,6 +129,8 @@ integ.add( integStatePhasing )
 # Define the end time of our trajectory integration to be periodReference *
 # orbsReference ( one complete phasing cycle ).
 endTime = beginTime + periodReference * orbsReference
+print(endTime)
+sys.exit()
 
 # Update the integration end time span on our reference and phasing
 # IntegStates.
