@@ -72,7 +72,7 @@ int main(){
                 if ((OUTPUT) && (step_count % output_freq == 0)) { // Print size to terminal
                     get_tree_info(&P, &G);
                     printf("Timestep: %d-%d, Program time: %f s, Sim. time: %f", nm, step_count, ((double)(clock()-start))/CLOCKS_PER_SEC, tt + mt + rt); 
-                    printf(" TU, Active/Total Cells: %d/%d, Max key %%: %f\n", P.a_count, P.tot_count, (double)(P.max_key)/(pow(2,64)-1)*100); 
+                    printf(" TU, Active/Total Cells: %d/%d, Max key %%: %e\n", P.a_count, P.tot_count, (double)(P.max_key)/(pow(2,64)-1)*100); 
                 }
 
                 step_count += 1; P.cfl_min_dt = INT_MAX;
@@ -80,7 +80,7 @@ int main(){
             if (step_count % output_freq != 0) {
                 get_tree_info(&P, &G);
                 printf("Timestep: %d-%d, Program time: %f s, Sim. time: %f", nm, step_count - 1, ((double)(clock()-start))/CLOCKS_PER_SEC, tt + mt + rt); 
-                printf(" TU, Active/Total Cells: %d/%d, Max key %%: %f\n", P.a_count, P.tot_count, (double)(P.max_key)/(pow(2,64)-1)*100); 
+                printf(" TU, Active/Total Cells: %d/%d, Max key %%: %e\n", P.a_count, P.tot_count, (double)(P.max_key)/(pow(2,64)-1)*100); 
             }
 
             if (RECORD) { // Record PDF

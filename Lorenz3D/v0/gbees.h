@@ -462,9 +462,9 @@ void initialize_grid(BST* P, Grid* G, Measurement M, Traj T){
     P->dead = dead_node; 
 
     int current_state[DIM]; double current_state_vec[DIM]; uint64_t key; double x; TreeNode* new_node; 
-    for (int i = (int) round(-3*M.cov[0][0])/G->dx[0]; i <= (int) round(3*M.cov[0][0])/G->dx[0]; i++){current_state[0] = i; current_state_vec[0] = i*G->dx[0]; 
-        for (int j = (int) round(-3*M.cov[1][1])/G->dx[1]; j <= (int) round(3*M.cov[1][1])/G->dx[1]; j++){current_state[1] = j; current_state_vec[1] = j*G->dx[1];
-            for (int k = (int) round(-3*M.cov[2][2])/G->dx[2]; k <= (int) round(3*M.cov[2][2])/G->dx[2]; k++){current_state[2] = k; current_state_vec[2] = k*G->dx[2];
+    for (int i = (int) round(-3*pow(M.cov[0][0],0.5)/G->dx[0]); i <= (int) round(3*pow(M.cov[0][0],0.5)/G->dx[0]); i++){current_state[0] = i; current_state_vec[0] = i*G->dx[0]; 
+        for (int j = (int) round(-3*pow(M.cov[1][1],0.5)/G->dx[1]); j <= (int) round(3*pow(M.cov[1][1],0.5)/G->dx[1]); j++){current_state[1] = j; current_state_vec[1] = j*G->dx[1];
+            for (int k = (int) round(-3*pow(M.cov[2][2],0.5)/G->dx[2]); k <= (int) round(3*pow(M.cov[2][2],0.5)/G->dx[2]); k++){current_state[2] = k; current_state_vec[2] = k*G->dx[2];
                 key = state_conversion(current_state);
                 x = gauss_probability(current_state_vec, (double *)M.cov);
                 new_node = TreeNode_create(key, Cell_create(x, zeros, zeros, zeros, zeros, current_state, 0, 0, 0, 0));

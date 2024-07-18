@@ -388,9 +388,9 @@ void BST_initialize_grid(BST* P, Grid* G, Measurement M){
     P->dead = dead_node; 
 
     int current_state[DIM]; double current_state_vec[DIM]; uint64_t key; double x; TreeNode* new_node; 
-    for (int i = (int) round(-3*M.cov[0][0])/G->dx[0]; i <= (int) round(3*M.cov[0][0])/G->dx[0]; i++){current_state[0] = i; current_state_vec[0] = i*G->dx[0]; 
-        for (int j = (int) round(-3*M.cov[1][1])/G->dx[1]; j <= (int) round(3*M.cov[1][1])/G->dx[1]; j++){current_state[1] = j; current_state_vec[1] = j*G->dx[1];
-            for (int k = (int) round(-3*M.cov[2][2])/G->dx[2]; k <= (int) round(3*M.cov[2][2])/G->dx[2]; k++){current_state[2] = k; current_state_vec[2] = k*G->dx[2];
+    for (int i = (int) round(-3*pow(M.cov[0][0],0.5)/G->dx[0]); i <= (int) round(3*pow(M.cov[0][0],0.5)/G->dx[0]); i++){current_state[0] = i; current_state_vec[0] = i*G->dx[0]; 
+        for (int j = (int) round(-3*pow(M.cov[1][1],0.5)/G->dx[1]); j <= (int) round(3*pow(M.cov[1][1],0.5)/G->dx[1]); j++){current_state[1] = j; current_state_vec[1] = j*G->dx[1];
+            for (int k = (int) round(-3*pow(M.cov[2][2],0.5)/G->dx[2]); k <= (int) round(3*pow(M.cov[2][2],0.5)/G->dx[2]); k++){current_state[2] = k; current_state_vec[2] = k*G->dx[2];
                 key = state_conversion(current_state);
                 x = gauss_probability(current_state_vec, (double *)M.cov);
                 new_node = TreeNode_create(key, Cell_create(x, zeros, zeros, zeros, zeros, current_state, 0, 0, 0, 0));
@@ -801,40 +801,6 @@ void grow_tree(BST* P, Grid G){
     BST_initialize_ik_nodes(P->root, P);
     P->root = BST_balance(P->root);
 }
-
-void initialize_vuw(TreeNode* r, Grid G, Traj T){
-    if(r == NULL){ 
-        return;
-    }
-    initialize_vuw(r->left, G, T);
-    initialize_vuw(r->right, G, T);
-
-    if(r->cell.new_f==0){
-        double x[DIM];
-        for(int i = 0; i < DIM; i++){
-            x[i] = G.dx[i]*r->cell.state[i]+G.center[i];
-        }
-
-        double v1 = T.sigma*(x[1]-(x[0]+(G.dx[0]/2.0)));
-        double v2 = -(x[1]+(G.dx[1]/2.0))-x[0]*x[2];
-        double v3 = -T.b*(x[2]+(G.dx[2]/2.0))+x[0]*x[1]-T.b*T.r;
-        double v[DIM] = {v1,v2,v3};
-        double u[DIM] = {fmin(v1,0.0),fmin(v2,0.0),fmin(v3,0.0)};
-        double w[DIM] = {fmax(v1,0.0),fmax(v2,0.0),fmax(v3,0.0)};
-        memcpy(r->cell.v, v, DIM * sizeof(double)); 
-        memcpy(r->cell.u, u, DIM * sizeof(double)); 
-        memcpy(r->cell.w, w, DIM * sizeof(double)); 
-        r->cell.new_f = 1;
-
-        double sum = 0;
-        for(int q = 0; q < DIM; q++) {
-            sum += fabs(r->cell.v[q]) / G.dx[q];
-        }
-
-        r->cell.cfl_dt = 1.0/sum;
-    }
-}
-
 void update_prob(BST* P, Grid* G, double rt){
     BST_check_cfl_condition(P->root, P); 
     G->dt = fmin(P->cfl_min_dt, rt);
@@ -893,4 +859,6 @@ void measurement_update(const char* FILE_NAME, BST* P, Grid G, double* measure_t
     fclose(measurement_file);
 
     BST_measurement_update(P->root, G, M);
+    BST_normalize_tree(P->root, P, &G); 
+    prune_tree(P, &G); 
 }

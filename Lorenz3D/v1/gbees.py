@@ -235,9 +235,9 @@ class BST:
         self.dead.cell.i_nodes = (ct.POINTER(Cell) * DIM)(*[ct.pointer(self.dead.cell), ct.pointer(self.dead.cell), ct.pointer(self.dead.cell)])
         self.dead.cell.k_nodes = (ct.POINTER(Cell) * DIM)(*[ct.pointer(self.dead.cell), ct.pointer(self.dead.cell), ct.pointer(self.dead.cell)])
 
-        for i in range(round(-3*m.cov[0][0]/G.dx[0]), round(3*m.cov[0][0]/G.dx[0]) + 1):
-            for j in range(round(-3*m.cov[1][1]/G.dx[1]), round(3*m.cov[1][1]/G.dx[1]) + 1):
-                for k in range(round(-3*m.cov[2][2]/G.dx[2]), round(3*m.cov[2][2]/G.dx[2]) + 1):
+        for i in range(round(-3*(m.cov[0][0]**0.5)/G.dx[0]), round(3*(m.cov[0][0]**0.5)/G.dx[0]) + 1):
+            for j in range(round(-3*(m.cov[1][1]**0.5)/G.dx[1]), round(3*(m.cov[1][1]**0.5)/G.dx[1]) + 1):
+                for k in range(round(-3*(m.cov[2][2]**0.5)/G.dx[2]), round(3*(m.cov[2][2]**0.5)/G.dx[2]) + 1):
                     current_state = np.array([i,j,k])
                     key = state_conversion(current_state)
                     current_state_vec = current_state*G.dx
