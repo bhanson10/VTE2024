@@ -57,7 +57,6 @@ plot(x((t <= 14*3600),3),x((t <= 14*3600),4), 'Color', tolred, 'LineStyle', '-',
 plot(x(:,3),x(:,4), 'Color', tolred, 'LineStyle', '--','LineWidth', 1, 'DisplayName','Nominal');
 drawnow;
 
-%{
 %% Particle Filter
 dir_path = "/Users/bhanson/OneDrive - UC San Diego/UCSD/Research/GBEES/GBEES/PCR3BP/PF/cmake-build-debug/Epochs/Europa/M0";
 file_list = dir(fullfile(dir_path, '*.txt'));  % List only .txt files
@@ -88,7 +87,6 @@ for i=[0, num_files-1]
 
     count = count + 1;
 end
-%}
 
 %% GBEES
 NM = 1; 

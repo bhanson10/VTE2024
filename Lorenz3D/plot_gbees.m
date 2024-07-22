@@ -33,7 +33,7 @@ plot3(Y(:,1),Y(:,2),Y(:,3),'k-','linewidth',2,'DisplayName','Nominal'); drawnow;
 %{
 % Plotting MC trajectories
 for k=0:nm
-    dir_path = append("./MC/Trajectories/M", num2str(k));
+    dir_path = append("/Users/bhanson/Library/CloudStorage/OneDrive-UCSanDiego/UCSD/Research/GBEES/GBEES/Lorenz3D/MC/Epochs/M", num2str(k));
     file_list = dir(fullfile(dir_path, '*.txt'));  % List only .txt files
     num_files = numel(file_list);
     
@@ -69,43 +69,34 @@ options = odeset('RelTol', 1e-13); % Setting a tolerance
 [t, Y] = ode45(@(t, Y) Lorenz3D(Y,const), tspan, Y0, options);
 
 plot3(Y(:,1),Y(:,2),Y(:,3),'k-','linewidth',2,'HandleVisibility','off'); drawnow;
+%}
 
-% Plotting MC dots
-for k=0:nm
-    dir_path = append("./MC/Epochs/M", num2str(k));
-    file_list = dir(fullfile(dir_path, '*.txt'));  % List only .txt files
+%% MC
+NM = 1; 
+dir_path = "./mc/Data/Ensembles/M";
+
+count = 1; 
+for nm=0:NM-1
+
+    sub_dir_path = dir_path + num2str(nm); 
+    file_list = dir(fullfile(sub_dir_path, '*.txt'));  % List only .txt files
     num_files = numel(file_list); 
 
+
     for i=0:num_files-1
-        file_path = dir_path + "/MC_" + num2str(i) + ".txt"; 
-        fileID = fopen(file_path, 'r'); 
-        t = str2double(fgetl(fileID)); 
-        
-        x_mc = zeros(size); y_mc = zeros(size); z_mc = zeros(size);
-        count = 1; 
-        while (count < size)
-            line = split(fgetl(fileID)); % Read a line as a string
-            x_mc(count) = str2double(line{1});
-            y_mc(count) = str2double(line{2});
-            z_mc(count) = str2double(line{3});
-            count = count + 1; 
-        end
+        file_path = sub_dir_path + "/MC_" + num2str(i) + ".txt"; 
+
+        [x_mc, n_mc, t_mc(count)] = parse_mc_txt(file_path);
 
         figure(2);
-        if((k==0)&&(i==0))
-            scatter3(x_mc(1),y_mc(1),z_mc(1),2,'k','filled','DisplayName','MC'); 
-        end
-        scatter3(x_mc,y_mc,z_mc,2,'k','filled','HandleVisibility','off');
-        % Close the file
-        fclose(fileID);
+        scatter3(x_mc(:,1),x_mc(:,2),x_mc(:,3), 2,'k','filled','HandleVisibility','off');
     end
 end
-%}
 
 %% GBEES
 NM = 1; 
 clear p; p.name = "GBEES"; p.alpha = [0.2, 0.4, 0.6]; 
-dir_path = "./gbees/v0/Data/PDFs/P";
+dir_path = "./gbees/v3/Data/PDFs/P";
 
 count = 1;
 for nm=0:NM-1
@@ -193,5 +184,20 @@ function [x, P, n, t] = parse_nongaussian_txt(filename)
     % Close the file
     fclose(fileID);
     n = length(P); 
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [x, n, t] = parse_mc_txt(filename)
+    fileID = fopen(filename, 'r'); t = str2double(fgetl(fileID));
+    
+    count = 1; 
+    while ~feof(fileID)
+        line = split(fgetl(fileID)); % Read a line as a string
+        x(count, :) = [str2double(line{1});str2double(line{2});str2double(line{3})];
+        count = count + 1; 
+    end
+    
+    % Close the file
+    fclose(fileID);
+    n = size(x,1); 
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
