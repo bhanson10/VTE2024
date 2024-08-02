@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
-#include <lapacke.h>
-#include <cblas.h>
 #include <stdbool.h>
 #include <string.h>
 #include <float.h>
@@ -320,26 +318,76 @@ double mc(double th){ // MC flux limiter
     return fmax(0.0, fmin(min1, 2*th)); 
 }
 
-double gauss_probability(int dim, double* x, Meas M){ // MC Calculate gaussian probability at state x given mean and covariance
-    lapack_int n = dim;
-    double* mat = (double *)malloc(dim * dim * sizeof(double));
-    if (mat == NULL) {
-        fprintf(stderr, "Error: memory allocation failure during gauss probability\n");
-        exit(EXIT_FAILURE);
-    }
-    for(int i = 0; i < dim; i++){
-        for(int j = 0; j < dim; j++){
-            mat[i * dim + j] = M.cov[i][j];
+
+void invertMatrix(Meas M, double* inverse, int size) {
+    int i, j, k;
+    double ratio;
+    double* augmented = (double*)malloc(size * size * 2 * sizeof(double));
+
+    for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+            augmented[i * 2 * size + j] = M.cov[i][j];
+            augmented[i * 2 * size + (j + size)] = (i == j) ? 1.0 : 0.0;
         }
     }
-    lapack_int ipiv[dim];
-    lapack_int info;
-    info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, n, n, mat, n, ipiv);
-    info = LAPACKE_dgetri(LAPACK_ROW_MAJOR, n, mat, n, ipiv);
-    double y[dim];
-    cblas_dgemv(CblasRowMajor, CblasNoTrans, dim, dim, 1.0, mat, dim, x, 1, 0.0, y, 1);
-    free(mat); 
-    return exp(-cblas_ddot(dim, x, 1, y, 1)/2.0);
+
+    for (i = 0; i < size; i++) {
+        if (augmented[i * 2 * size + i] == 0) {
+            fprintf(stderr, "Matrix inversion error: zero pivot element.\n");
+            exit(EXIT_FAILURE);
+        }
+        for (j = 0; j < size; j++) {
+            if (i != j) {
+                ratio = augmented[j * 2 * size + i] / augmented[i * 2 * size + i];
+                for (k = 0; k < 2 * size; k++) {
+                    augmented[j * 2 * size + k] -= ratio * augmented[i * 2 * size + k];
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+            inverse[i * size + j] = augmented[i * 2 * size + (j + size)] / augmented[i * 2 * size + i];
+        }
+    }
+
+    free(augmented);
+}
+
+void multiplyMatrixVector(double* matrix, double* vector, double* result, int size) {
+    int i, j;
+    for (i = 0; i < size; i++) {
+        result[i] = 0;
+        for (j = 0; j < size; j++) {
+            result[i] += matrix[i * size + j] * vector[j];
+        }
+    }
+}
+
+double dotProduct(double* vec1, double* vec2, int size) {
+    int i;
+    double result = 0;
+    for (i = 0; i < size; i++) {
+        result += vec1[i] * vec2[i];
+    }
+    return result;
+}
+
+double gauss_probability(int dim, double* x, Meas M){ // MC Calculate gaussian probability at state x given mean and covariance
+    double* M_inv = (double*)malloc(dim * dim * sizeof(double));
+    double* M_inv_x = (double*)malloc(dim * sizeof(double));
+    double exp_result;
+
+    invertMatrix(M, M_inv, dim);
+    multiplyMatrixVector(M_inv, x, M_inv_x, dim);
+    double dot_prod = dotProduct(x, M_inv_x, dim);
+    exp_result = exp(-0.5 * dot_prod);
+
+    free(M_inv);
+    free(M_inv_x);
+
+    return exp_result;
 }
 
 /*==============================================================================
