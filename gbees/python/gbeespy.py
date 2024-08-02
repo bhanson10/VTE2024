@@ -3,7 +3,7 @@ import time
 import sys
 sys.setrecursionlimit(10000)
 
-lib = ct.CDLL("gbees.so")
+lib = ct.CDLL("./gbees.so")
 TOL = 1E-8
 
 class Meas(ct.Structure):
