@@ -129,8 +129,6 @@ integ.add( integStatePhasing )
 # Define the end time of our trajectory integration to be periodReference *
 # orbsReference ( one complete phasing cycle ).
 endTime = beginTime + periodReference * orbsReference
-print(endTime)
-sys.exit()
 
 # Update the integration end time span on our reference and phasing
 # IntegStates.

@@ -1,2 +1,9 @@
 .DS_Store
 *.json
+*.boa
+*.sqlite
+Monte/poincare/cr3bp_catalog.sqlite
+Monte/poincare/de433.boa
+Monte/poincare/de438.boa
+Monte/poincare/jup310.boa
+Monte/poincare/test.boa
