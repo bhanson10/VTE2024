@@ -22,6 +22,8 @@ set(gca, 'FontName', 'Times', 'FontSize', 14);
 
 %% Truth
 [x, n] = parse_monte_txt("jupiter_europa_lpo.txt");
+x(:,1:2) = x(:,1:2)*const.LU;
+x(:,3:4) = x(:,3:4)*const.LU/const.TU;
 
 %% Plotting Nominal Trajectories
 figure(1); 
