@@ -13,6 +13,13 @@ double* PCR3BP(double* x, double* dx, Traj T){
     return v;
 }
 
+double PCR3BP_J(double* x, double* dx, Traj T){
+    double r1 = pow(pow(x[0]+T.coef[0],2)+pow(x[1],2), 0.5);
+    double r2 = pow(pow(x[0]-1+T.coef[0],2)+pow(x[1],2), 0.5);
+    double v = pow(x[0], 2.0) + pow(x[1], 2.0) + (2*(1-T.coef[0])/r1) + (2*T.coef[0]/r2) + T.coef[0]*(1 - T.coef[0]) - (pow(x[2], 2.0) + pow(x[3], 2.0));
+    return v;
+}
+
 int main(){
     //=================================== Read in initial discrete measurement =================================//
     printf("\nReading in initial discrete measurement...\n\n");
@@ -30,7 +37,7 @@ int main(){
     for(int i = 0; i < DIM; i ++){
         del[i] = pow(M.cov[i][i],0.5)/2;
     }
-    Grid G = Grid_create(DIM, 1E-7, M.mean, del);  // Inputs: (dimension, probability threshold, center, grid width)       
+    Grid G = Grid_create(DIM, 3E-7, M.mean, del);  // Inputs: (dimension, probability threshold, center, grid width)       
 
     double coef[] = {2.528017528540000E-5};        // PCR3BP trajectory attributes (mu)
     Traj T = Traj_create(1, coef); // Inputs: (# of coefficients, coefficients)
@@ -38,6 +45,7 @@ int main(){
     bool OUTPUT = true;                            // Write info to terminal
     bool RECORD = true;                            // Write PDFs to .txt file
     bool MEASURE = true;                           // Take discrete measurement updates
+    bool BOUNDS = true;                            // Add inadmissible regions to grid
     int OUTPUT_FREQ = 20;                          // Number of steps per output to terminal
     int DEL_STEP = 20;                             // Number of steps per deletion procedure
     int NUM_DIST = 17;                             // Number of distributions recorded per measurement
@@ -45,7 +53,7 @@ int main(){
     //==========================================================================================================//
 
     //================================================= GBEES ==================================================//
-    run_gbees(PCR3BP, G, M, T, P_DIR, M_DIR, NUM_DIST, NUM_MEAS, DEL_STEP, OUTPUT_FREQ, DIM, OUTPUT, RECORD, MEASURE);
+    run_gbees(PCR3BP, PCR3BP_J, G, M, T, P_DIR, M_DIR, NUM_DIST, NUM_MEAS, DEL_STEP, OUTPUT_FREQ, DIM, OUTPUT, RECORD, MEASURE, BOUNDS);
 
     return 0;
 }

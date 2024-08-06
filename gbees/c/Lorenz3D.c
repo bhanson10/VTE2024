@@ -35,6 +35,7 @@ int main(){
     bool OUTPUT = true;                                       // Write info to terminal
     bool RECORD = true;                                       // Write PDFs to .txt file
     bool MEASURE = true;                                      // Take discrete measurement updates
+    bool BOUNDS = false;                                       // Add inadmissible regions to grid
     int OUTPUT_FREQ = 20;                                     // Number of steps per output to terminal
     int DEL_STEP = 20;                                        // Number of steps per deletion procedure
     int NUM_DIST = 6;                                         // Number of distributions recorded per measurement
@@ -42,7 +43,7 @@ int main(){
     //==========================================================================================================//
 
     //================================================= GBEES ==================================================//
-    run_gbees(Lorenz3D, G, M, T, P_DIR, M_DIR, NUM_DIST, NUM_MEAS, DEL_STEP, OUTPUT_FREQ, DIM, OUTPUT, RECORD, MEASURE);
+    run_gbees(Lorenz3D, NULL, G, M, T, P_DIR, M_DIR, NUM_DIST, NUM_MEAS, DEL_STEP, OUTPUT_FREQ, DIM, OUTPUT, RECORD, MEASURE, BOUNDS);
 
     return 0;
 }

@@ -1,16 +1,17 @@
 clear all; close all; clc; 
 
 mkrs = {"-o", "-square", "->", "-pentagram"}; 
-DIR = "/Data"; TU = 1; n = 4; 
-names = {'v0: C implementation',...
-         'v2: Python extension',...
-         'v3: Python embedding'};
+DIR = {"c","python"};
+MDL = "Lorenz3D";
+
+TU = 1; n = 4; 
+names = {'c implementation',...
+         'python extension'};
 time_unit = '(TU)';
 
 f = {}; 
 for i=1:length(names)
-    name = names{i}; 
-    f{end+1} = fopen("./" + name(1:2) + DIR + "/runtime.txt", 'r');
+    f{end+1} = fopen("./" + DIR{i} + "/Data/" + MDL + "/runtime.txt", 'r');
 end
 
 [rt, pt, s] = parse_time_files(f);
@@ -47,7 +48,7 @@ rt1 = rt{1}; pt1 = pt{1}; name1 = names{1};
 for i=2:length(f)
     pti = pt{i}; name = names{i}; 
     pti_norm = pti./pt1; 
-    plot(rt1(2:end).*TU, pti_norm(2:end), mkrs{i}, 'Color', 'blue', 'LineWidth', 1, 'MarkerSize', 10, 'DisplayName', append(name(1:2), ' / ', name1(1:2)));
+    plot(rt1(2:end).*TU, pti_norm(2:end), mkrs{i}, 'Color', 'blue', 'LineWidth', 1, 'MarkerSize', 10, 'DisplayName', append(name, ' / ', name1));
 end
 ylabel("Normalized program time", 'FontSize', 18, 'FontName', 'Times');
 
@@ -56,7 +57,7 @@ s1 = s{1};
 for i=2:length(f)
     si = s{i}; name = names{i}; 
     si_norm = si./s1; 
-    plot(rt1(2:end).*TU, si_norm(2:end), mkrs{i}, 'Color', 'red', 'LineWidth', 1, 'MarkerSize', 10, 'DisplayName', append(name(1:2), ' / ', name1(1:2)));
+    plot(rt1(2:end).*TU, si_norm(2:end), mkrs{i}, 'Color', 'red', 'LineWidth', 1, 'MarkerSize', 10, 'DisplayName', append(name, ' / ', name1));
 end
 ylabel("Normalized cell number", 'FontSize', 18, 'FontName', 'Times');
 
