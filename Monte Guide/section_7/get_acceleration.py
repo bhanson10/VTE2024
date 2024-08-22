@@ -4,9 +4,9 @@
 #
 # GOAL: Call Monte to return the acceleration of a state in the PCR3BP system
 
-import Monte as M
-import vista
-import poincare
+import Monte as M # type: ignore
+import vista # type: ignore
+import poincare # type: ignore
 import numpy as np
 
 def CR3BP(x, mu):
@@ -21,18 +21,18 @@ def CR3BP(x, mu):
     return [v1, v2, v3, v4, v5, v6]
 
 # JPL Horizons Database
-DATA_BASE = './poincare/cr3bp_catalog.sqlite'
+DATA_BASE = './ephem/cr3bp_catalog.sqlite'
 
 # Load orbit #159 from Jupiter-Europa Low-prograde eastern orbit set
 IC = [
    sol for sol in poincare.queryDB(
       {
-         'PRIMARY_BODY': 'JUPITER',
-         'SECONDARY_BODY': 'EUROPA',
+         'PRIMARY_BODY': 'SATURN',
+         'SECONDARY_BODY': 'ENCELADUS',
          'TYPE': 'LIBRATION_POINT',
-         'FAMILY': 'LPO_EASTERN',
-         'JACOBI_CONSTANTmin': 3.00354116777217,
-         'JACOBI_CONSTANTmax': 3.00354116777219,
+         'FAMILY': 'DPO',
+         'JACOBI_CONSTANTmin': 3.00007809820528,
+         'JACOBI_CONSTANTmax': 3.00007809820529,
       },
       DATA_BASE
    )
@@ -45,41 +45,42 @@ km = M.UnitDbl(1, "km")
 sec = M.UnitDbl(1, "sec")
 boa = M.BoaLoad()
 M.DefaultGm.addAll(boa)
-boa = M.BoaLoad( ["./poincare/jup310.boa", "./poincare/de433.boa"] )
-with M.BoaFile("jupiter_europa_cr3bp.boa") as myFile:
-   myFile.mergeTree(boa)
+boa = M.BoaLoad( ["./ephem/sat375l.boa", "./ephem/de430.boa"] )
+
 # create a CR3BP universe in Monte
 begin_time = M.Epoch('1-jan-2000 00:00:00et')
-jupiter_europa_system = poincare.makeCR3BP( boa, 'jupiter', 'europa', epoch = begin_time)
+saturn_europa_system = poincare.makeCR3BP( boa, 'saturn', 'enceladus', epoch = begin_time)
+x0_nd[2] = 0
+x0_nd[5] = 0
 
 # true state
 print("\nState: ", x0_nd)
 
 # analytical derivative
-a_adv = CR3BP(x0_nd, jupiter_europa_system.mu)
+a_adv = CR3BP(x0_nd, saturn_europa_system.mu)
 print("\nAnalytical Derivative: ", a_adv)
 
 # monte derivative
 m_x0_nd = poincare.NONDIMENSIONAL_ST(x0_nd[0], x0_nd[1], x0_nd[2], x0_nd[3], x0_nd[4], x0_nd[5])
-m_x0_d = poincare.makeDimensional(m_x0_nd, jupiter_europa_system, 'LPO', epoch = begin_time)
+m_x0_d = poincare.makeDimensional(m_x0_nd, saturn_europa_system, 'LPO', epoch = begin_time)
 poincare.propagate(m_x0_d, 0.01 * sec)
-query_LPO = M.TrajQuery(jupiter_europa_system.boa, 'LPO', 'Jupiter Barycenter', 'EME2000')
-m_x0_d = query_LPO.pva(begin_time, jupiter_europa_system.rotatingFrame)
-m_adv = [m_x0_d.vel()[0] * km/sec * jupiter_europa_system.Tstar/jupiter_europa_system.Lstar, m_x0_d.vel()[1] * km/sec * jupiter_europa_system.Tstar/jupiter_europa_system.Lstar, m_x0_d.vel()[2] * km/sec * jupiter_europa_system.Tstar/jupiter_europa_system.Lstar, m_x0_d.acc()[0] * km/sec**2 * jupiter_europa_system.Tstar**2/jupiter_europa_system.Lstar, m_x0_d.acc()[1] * km/sec**2 * jupiter_europa_system.Tstar**2/jupiter_europa_system.Lstar, m_x0_d.acc()[2] * km/sec**2 * jupiter_europa_system.Tstar**2/jupiter_europa_system.Lstar]
+query_LPO = M.TrajQuery(saturn_europa_system.boa, 'LPO', 'Saturn Barycenter', 'EME2000')
+m_x0_d = query_LPO.pva(begin_time, saturn_europa_system.rotatingFrame)
+m_adv = [m_x0_d.vel()[0] * km/sec * saturn_europa_system.Tstar/saturn_europa_system.Lstar, m_x0_d.vel()[1] * km/sec * saturn_europa_system.Tstar/saturn_europa_system.Lstar, m_x0_d.vel()[2] * km/sec * saturn_europa_system.Tstar/saturn_europa_system.Lstar, m_x0_d.acc()[0] * km/sec**2 * saturn_europa_system.Tstar**2/saturn_europa_system.Lstar, m_x0_d.acc()[1] * km/sec**2 * saturn_europa_system.Tstar**2/saturn_europa_system.Lstar, m_x0_d.acc()[2] * km/sec**2 * saturn_europa_system.Tstar**2/saturn_europa_system.Lstar]
 print("\nMonte Derivative: ", m_adv)
 
 # # query orbit at varying dates for visualization
-# end_time = begin_time + IC["PERIOD"]*jupiter_europa_system.Tstar
+# end_time = begin_time + IC["PERIOD"]*saturn_europa_system.Tstar
 # dates = M.Epoch.range(begin_time, end_time, 60 * sec)
-# query_LPO = M.TrajQuery(jupiter_europa_system.boa, 'LPO', 'Jupiter Barycenter', 'EME2000')
+# query_LPO = M.TrajQuery(saturn_europa_system.boa, 'LPO', 'Jupiter Barycenter', 'EME2000')
 # states_LPO = []
 # for date in dates:
 #     state_LPO = query_LPO.state(date)
-#     state_LPO = state_LPO.relativeTo(jupiter_europa_system.barycenter, jupiter_europa_system.rotatingFrame)
-#     state_LPO = poincare.makeNondimensional(state_LPO, jupiter_europa_system)
+#     state_LPO = state_LPO.relativeTo(saturn_europa_system.barycenter, saturn_europa_system.rotatingFrame)
+#     state_LPO = poincare.makeNondimensional(state_LPO, saturn_europa_system)
 #     states_LPO.append(state_LPO)
 
-# with open('jupiter_europa_lpo.txt', 'w') as file:
+# with open('saturn_europa_lpo.txt', 'w') as file:
 #     for row in states_LPO:
 #         row = [row.x, row.y, row.z, row.dx, row.dy, row.dz]
 #         file.write(' '.join(map(str, row)) + '\n')

@@ -1,30 +1,17 @@
-import Monte # type: ignore
-import poincare # type: ignore
-import gbeespy_m as gbees
-import math 
+import gbeespy as gbees 
+import math
 
 DIM_f = 4 # State dimension
 DIM_h = 3 # Measurement dimension
 
-km = Monte.UnitDbl(1, "km")
-sec = Monte.UnitDbl(1, "sec")
-begin_time = Monte.Epoch('1-jan-2000 00:00:00et')
-boa = Monte.BoaLoad()
-Monte.DefaultGm.addAll(boa)
-boa = Monte.BoaLoad( ["./ephem/sat375l.boa", "./ephem/de430.boa"] )
-sa_en_sys = poincare.makeCR3BP( boa, 'saturn', 'enceladus', epoch = begin_time)
-
 # This function defines the dynamics model - required
 def PCR3BP(x, dx, coef):
-    x_nd = poincare.NONDIMENSIONAL_ST(x[0], x[1], 0, x[2], x[3], 0)
-    x_d = poincare.makeDimensional(x_nd, sa_en_sys, 'LPO', epoch = begin_time)
-    poincare.propagate(x_d, 0.01 * sec)
-    query_LPO = Monte.TrajQuery(sa_en_sys.boa, 'LPO', 'Saturn Barycenter', 'EME2000')
-    x_d = query_LPO.pva(begin_time, sa_en_sys.rotatingFrame)
-    v1 = x_d.vel()[0] * km/sec * sa_en_sys.Tstar/sa_en_sys.Lstar
-    v2 = x_d.vel()[1] * km/sec * sa_en_sys.Tstar/sa_en_sys.Lstar
-    v3 = x_d.acc()[0] * km/sec**2 * sa_en_sys.Tstar**2/sa_en_sys.Lstar
-    v4 = x_d.acc()[1] * km/sec**2 * sa_en_sys.Tstar**2/sa_en_sys.Lstar
+    r1 = ((x[0] + coef[0])**2 + (x[1])**2)**1.5
+    r2 = ((x[0] - 1 + coef[0])**2 + (x[1])**2)**1.5
+    v1 = x[2]
+    v2 = x[3]
+    v3 = 2*x[3]+x[0]-(coef[0]*(x[0]-1+coef[0])/r2)-((1-coef[0])*(x[0]+coef[0])/r1)
+    v4 = -2*x[2]+x[1]-(coef[0]*x[1]/r2)-((1-coef[0])*x[1]/r1)
     return [v1, v2, v3, v4]
 
 # This function defines the measurement model - required
@@ -44,7 +31,7 @@ def PCR3BP_J(x, coef):
 #==================================== Read in initial discrete measurement ==================================#
 print("Reading in initial discrete measurement...\n")
 
-P_DIR = "./results/monte"    # Saved PDFs path
+P_DIR = "./results/analytical"      # Saved PDFs path
 M_DIR = "./measurements"     # Measurement path
 M_FILE = "measurement0.txt"; # Measurement file
 M = gbees.Meas_create(DIM_f, M_DIR, M_FILE)
