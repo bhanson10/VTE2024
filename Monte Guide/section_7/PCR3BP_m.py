@@ -17,15 +17,13 @@ sa_en_sys = poincare.makeCR3BP( boa, 'saturn', 'enceladus', epoch = begin_time)
 # This function defines the dynamics model - required
 def PCR3BP(x, dx, coef):
     x_nd = poincare.NONDIMENSIONAL_ST(x[0], x[1], 0, x[2], x[3], 0)
-    x_d = poincare.makeDimensional(x_nd, sa_en_sys, 'LPO', epoch = begin_time)
+    x_d = poincare.makeDimensional(x_nd, sa_en_sys, 'DPO', epoch = begin_time)
     poincare.propagate(x_d, 0.01 * sec)
-    query_LPO = Monte.TrajQuery(sa_en_sys.boa, 'LPO', 'Saturn Barycenter', 'EME2000')
-    x_d = query_LPO.pva(begin_time, sa_en_sys.rotatingFrame)
-    v1 = x_d.vel()[0] * km/sec * sa_en_sys.Tstar/sa_en_sys.Lstar
-    v2 = x_d.vel()[1] * km/sec * sa_en_sys.Tstar/sa_en_sys.Lstar
+    query_DPO = Monte.TrajQuery(sa_en_sys.boa, 'DPO', 'Saturn Barycenter', 'EME2000')
+    x_d = query_DPO.pva(begin_time, sa_en_sys.rotatingFrame)
     v3 = x_d.acc()[0] * km/sec**2 * sa_en_sys.Tstar**2/sa_en_sys.Lstar
     v4 = x_d.acc()[1] * km/sec**2 * sa_en_sys.Tstar**2/sa_en_sys.Lstar
-    return [v1, v2, v3, v4]
+    return [x[2], x[3], v3, v4]
 
 # This function defines the measurement model - required
 def rtrr(x, dx, coef):
@@ -56,7 +54,7 @@ print("Reading in user inputs...\n")
 dx = [None] * DIM_f                             # Grid width, default is half of the std. dev. from the initial measurement 
 for i in range(DIM_f):
     dx[i] = (M.cov[i][i]**(0.5))/2
-G = gbees.Grid_create(DIM_f, 1E-7, M.mean, dx); # Inputs: (dimension, probability threshold, center, grid width)    
+G = gbees.Grid_create(DIM_f, 7E-8, M.mean, dx); # Inputs: (dimension, probability threshold, center, grid width)    
  
 coef = [1.901109735892602E-07]                # PCR3BP trajectory attributes (mu)
 T = gbees.Traj_create(len(coef), coef);       # Inputs: (# of coefficients, coefficients)
