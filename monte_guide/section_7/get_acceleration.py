@@ -25,14 +25,14 @@ DATA_BASE = './ephem/cr3bp_catalog.sqlite'
 
 # Load orbit #159 from Jupiter-Europa Low-prograde eastern orbit set
 IC = [
-   sol for sol in poincare.queryDB(
+      sol for sol in poincare.queryDB(
       {
          'PRIMARY_BODY': 'SATURN',
          'SECONDARY_BODY': 'ENCELADUS',
          'TYPE': 'LIBRATION_POINT',
          'FAMILY': 'DPO',
-         'JACOBI_CONSTANTmin': 3.00007809820528,
-         'JACOBI_CONSTANTmax': 3.00007809820529,
+         'JACOBI_CONSTANTmin': 3.0000780982052,
+         'JACOBI_CONSTANTmax': 3.0000780982053,
       },
       DATA_BASE
    )

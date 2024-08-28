@@ -26,7 +26,7 @@ for i=1:length(f)
     sti = st{i}; pti = pt{i}; 
     plot(sti.*TU, pti, mkrs{i}, 'Color', 'blue', 'LineWidth', 1, 'MarkerSize', 10, 'DisplayName', names{i});
 end
-ylabel("Program time (s)", 'FontSize', 18, 'FontName', 'Times');
+ylabel("Computation time (s)", 'FontSize', 18, 'FontName', 'Times');
 
 yyaxis right; hold on; 
 ax.YAxis(2).Color = [1 0 0];
@@ -61,7 +61,7 @@ for i=2:length(f)
         plot(st1(2:end).*TU, pti_norm(2:end), mkrs{i}, 'Color', 'blue', 'LineWidth', 1, 'MarkerSize', 10, 'HandleVisibility', 'off');
     end
 end
-ylabel("Normalized program time", 'FontSize', 18, 'FontName', 'Times');
+ylabel("Normalized computation time", 'FontSize', 18, 'FontName', 'Times');
 
 yyaxis right; hold on; 
 s1 = s{1}; 

@@ -18,8 +18,21 @@ axis("equal")
 set(gca, 'FontName', 'Times', 'FontSize', 14);
 xlabel("$x$ (km)", "Interpreter","latex")
 ylabel("$y$ (km)", "Interpreter","latex")
-europa = nsidedpoly(1000, 'Center', [(1-prop.mu)*prop.LU, 0], 'Radius', prop.sec_r);
-plot(europa, 'FaceColor', 'm', 'EdgeColor','none');
+[C, ~, ~] = imread('./enceladus.jpeg');
+radius = size(C,1)/2; 
+center = [size(C,1)/2, size(C,2)/2]; 
+for i = 1:size(C,1)
+    for j = 1:size(C,2)
+        x = [i,j]; 
+        if norm(x - center, 2) > radius
+            C(i,j,:) = uint8([255, 255, 255]); 
+        end
+    end
+end
+center = [(1-prop.mu)*prop.LU, 0]; 
+x = [center(1) - (prop.sec_r), center(1) + (prop.sec_r)];
+y = [center(2) - (prop.sec_r), center(2) + (prop.sec_r)];
+image(x, y, C)
 
 nexttile(2); hold all; 
 axis("equal")
@@ -97,18 +110,18 @@ plot_nongaussian_surface(x_gbees(:,3:4),P_gbees,[normpdf(1)/normpdf(0), normpdf(
 drawnow; 
 
 clear L; clear LH; 
-LH(1) = plot(NaN,NaN,'o','MarkerSize', 10, 'MarkerFaceColor',[1,167/255,254/255],'MarkerEdgeColor','none');
+LH(1) = plot(NaN,NaN,'o','MarkerSize', 10, 'MarkerFaceColor','c','MarkerEdgeColor','k');
 L{1} = "Enceladus\,\,\,";
 LH(2) = plot(NaN,NaN,'k-', 'LineWidth',1);
 L{2} = "Nominal\,\,\,";
 LH(3) = fill(nan, nan, nan, 'FaceAlpha', 0.7, 'FaceColor', C(1,:), 'EdgeColor', 'none');
-L{3} = "$p_\mathbf{x}(\mathbf{x}'|\mathbf{y}_0)\,\,\,$";
+L{3} = "$p_\mathbf{x}(\mathbf{x}',t_{0+})\,\,\,$";
 LH(4) = fill(nan, nan, nan, 'FaceAlpha', 0.7, 'FaceColor', C(2,:), 'EdgeColor', 'none');
-L{4} = "$p_\mathbf{x}(\mathbf{x}'|\mathbf{y}_1)\,\,\,$";
+L{4} = "$p_\mathbf{x}(\mathbf{x}',t_{1+})\,\,\,$";
 LH(5) = fill(nan, nan, nan, 'FaceAlpha', 0.7, 'FaceColor', C(3,:), 'EdgeColor', 'none');
-L{5} = "$p_\mathbf{x}(\mathbf{x}'|\mathbf{y}_2)\,\,\,$";
+L{5} = "$p_\mathbf{x}(\mathbf{x}',t_{2+})\,\,\,$";
 LH(6) = fill(nan, nan, nan, 'FaceAlpha', 0.7, 'FaceColor', C(4,:)', 'EdgeColor', 'none');
-L{6} = "$p_\mathbf{x}(\mathbf{x}'|\mathbf{y}_3)\,\,\,$";
+L{6} = "$p_\mathbf{x}(\mathbf{x}',t_{3+})\,\,\,$";
 leg = legend(LH, L, 'Orientation', 'Horizontal', 'FontSize', 18, 'FontName', 'times', 'Interpreter', 'latex');
 leg.Layout.Tile = 'south';
 drawnow; 
